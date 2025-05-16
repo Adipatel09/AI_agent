@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Pocket AI - Product Catalog{% endblock %}
+
+{% block head %}
+<style>
+    .category-tab.active {
+        background: linear-gradient(135deg, #9333ea, #4f46e5);
+        color: white;
+    }
+    
+    .product-card {
+        transition: all 0.3s ease;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .category-heading {
+        background: linear-gradient(135deg, #9333ea10, #4f46e510);
+        border-left: 4px solid #9333ea;
+    }
+    
+    .price-tag {
+        background: linear-gradient(135deg, #9333ea, #4f46e5);
+    }
+    
+    .category-tab-container {
+        scrollbar-width: thin;
+        scrollbar-color: #9333ea #f3f4f6;
+    }
+    
+    .category-tab-container::-webkit-scrollbar {
+        height: 6px;
+    }
+    
+    .category-tab-container::-webkit-scrollbar-track {
+        background: #f3f4f6;
+    }
+    
+    .category-tab-container::-webkit-scrollbar-thumb {
+        background-color: #9333ea;
+        border-radius: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-purple-50 to-indigo-50 shadow-lg rounded-lg p-8 mb-8">
+    <div class="text-center mb-10">
+        <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 mb-4">Product Catalog</h1>
+        <p class="text-gray-600 max-w-2xl mx-auto">Browse our complete collection of products organized by category.</p>
+    </div>
+    
+    <!-- Category Navigation -->
+    <div class="mb-8 overflow-x-auto category-tab-container">
+        <div class="flex space-x-2 pb-2 min-w-max">
+            <button class="category-tab active px-4 py-2 rounded-lg font-medium text-sm" data-category="all">
+                All Categories
+            </button>
+            {% for category in categories %}
+            <button class="category-tab px-4 py-2 rounded-lg font-medium bg-white shadow-sm text-gray-700 text-sm" data-category="{{ category }}">
+                {{ category|capitalize }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- All Products Section -->
+    <div id="all-category" class="category-section">
+        {% for category in categories %}
+        <div class="mb-12">
+            <div class="category-heading px-4 py-3 rounded-lg mb-6">
+                <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">{{ category|capitalize }}</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {% for product in products_by_category[category] %}
+                <div class="product-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+                    <div class="h-48 bg-gray-100 flex items-center justify-center relative">
+                        <div class="text-6xl text-gray-300">{{ product.category|capitalize|first }}</div>
+                        <div class="absolute top-0 right-0 m-2">
+                            <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-xs font-semibold text-gray-700">
+                                ID: {{ product.id }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-semibold text-gray-800 leading-tight">{{ product.name }}</h3>
+                            <span class="price-tag text-white text-sm font-bold px-2 py-1 rounded-full">${{ product.price }}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3">{{ product.category|capitalize }} - {{ product.type|capitalize }}</p>
+                        
+                        <div class="flex flex-wrap gap-1 mb-3">
+                            {% for tag in product.tags %}
+                            <span class="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Individual Category Sections -->
+    {% for category in categories %}
+    <div id="{{ category }}-category" class="category-section hidden">
+        <div class="mb-8">
+            <div class="category-heading px-4 py-3 rounded-lg mb-6">
+                <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">{{ category|capitalize }}</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {% for product in products_by_category[category] %}
+                <div class="product-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+                    <div class="h-48 bg-gray-100 flex items-center justify-center relative">
+                        <div class="text-6xl text-gray-300">{{ product.category|capitalize|first }}</div>
+                        <div class="absolute top-0 right-0 m-2">
+                            <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-xs font-semibold text-gray-700">
+                                ID: {{ product.id }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-semibold text-gray-800 leading-tight">{{ product.name }}</h3>
+                            <span class="price-tag text-white text-sm font-bold px-2 py-1 rounded-full">${{ product.price }}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3">{{ product.category|capitalize }} - {{ product.type|capitalize }}</p>
+                        
+                        <div class="flex flex-wrap gap-1 mb-3">
+                            {% for tag in product.tags %}
+                            <span class="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all category tabs and sections
+        const categoryTabs = document.querySelectorAll('.category-tab');
+        const categorySections = document.querySelectorAll('.category-section');
+        
+        // Add click event to each tab
+        categoryTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs
+                categoryTabs.forEach(t => t.classList.remove('active'));
+                
+                // Add active class to clicked tab
+                this.classList.add('active');
+                
+                // Get the category to show
+                const categoryToShow = this.getAttribute('data-category');
+                
+                // Hide all sections
+                categorySections.forEach(section => {
+                    section.classList.add('hidden');
+                });
+                
+                // Show the selected section
+                if (categoryToShow === 'all') {
+                    document.getElementById('all-category').classList.remove('hidden');
+                } else {
+                    document.getElementById(`${categoryToShow}-category`).classList.remove('hidden');
+                }
+                
+                // Scroll to top of the content area
+                window.scrollTo({
+                    top: document.querySelector('.bg-gradient-to-br').offsetTop,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    });
+</script>
+{% endblock %} 

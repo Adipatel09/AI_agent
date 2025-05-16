@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Pocket AI - Chat{% endblock %}
+
+{% block head %}
+<style>
+    .chat-container {
+        height: 60vh;
+        overflow-y: auto;
+    }
+    .user-message {
+        background-color: #e5e7eb;
+        border-radius: 18px 18px 0 18px;
+    }
+    .bot-message {
+        background-color: #9333ea;
+        color: white;
+        border-radius: 18px 18px 18px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow-lg rounded-lg p-6">
+    <h1 class="text-2xl font-bold text-purple-700 mb-4">Chat with Pocket AI</h1>
+    <p class="text-gray-600 mb-6">Ask me anything about shopping, products, or how I can help you find what you need!</p>
+    
+    <div id="session-id" data-session-id="{{ session_id }}" class="hidden"></div>
+    
+    <div id="chat-container" class="chat-container bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
+        <div class="bot-message p-3 mb-4 max-w-3xl">
+            <p>Hello! I'm Pocket AI, your shopping assistant. How can I help you today?</p>
+        </div>
+        <!-- Chat messages will appear here -->
+    </div>
+    
+    <form id="chat-form" class="flex">
+        <input type="text" id="message-input" class="flex-grow border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Type your message..." required>
+        <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-r-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500">Send</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatForm = document.getElementById('chat-form');
+        const messageInput = document.getElementById('message-input');
+        const chatContainer = document.getElementById('chat-container');
+        const sessionIdElement = document.getElementById('session-id');
+        let sessionId = sessionIdElement.dataset.sessionId || '';
+        
+        chatForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            // Add user message to chat
+            appendMessage(message, 'user');
+            messageInput.value = '';
+            
+            // Show loading indicator
+            const loadingElement = document.createElement('div');
+            loadingElement.className = 'bot-message p-3 mb-4 max-w-3xl';
+            loadingElement.innerHTML = '<p>Thinking...</p>';
+            chatContainer.appendChild(loadingElement);
+            scrollToBottom();
+            
+            try {
+                // Send message to backend
+                const formData = new FormData();
+                formData.append('session_id', sessionId);
+                formData.append('message', message);
+                
+                const response = await fetch('/send-message', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                // Remove loading indicator
+                chatContainer.removeChild(loadingElement);
+                
+                if (result.success) {
+                    // Add bot message to chat
+                    appendMessage(result.data.reply, 'bot');
+                    
+                    // Update session ID if needed
+                    if (!sessionId && result.data.sessionId) {
+                        sessionId = result.data.sessionId;
+                        // Update URL with session ID
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('session_id', sessionId);
+                        window.history.replaceState({}, '', newUrl);
+                    }
+                } else {
+                    // Show error message
+                    appendMessage(`Error: ${result.error || 'Failed to get response'}`, 'bot');
+                }
+            } catch (error) {
+                // Remove loading indicator
+                chatContainer.removeChild(loadingElement);
+                // Show error message
+                appendMessage(`Error: ${error.message || 'Something went wrong'}`, 'bot');
+            }
+        });
+        
+        function appendMessage(message, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.className = sender === 'user' ? 'user-message p-3 mb-4 ml-auto max-w-3xl' : 'bot-message p-3 mb-4 max-w-3xl';
+            
+            // Convert line breaks to <br> tags
+            const formattedMessage = message.replace(/\n/g, '<br>');
+            messageElement.innerHTML = `<p>${formattedMessage}</p>`;
+            
+            chatContainer.appendChild(messageElement);
+            scrollToBottom();
+        }
+        
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    });
+</script>
+{% endblock %} 

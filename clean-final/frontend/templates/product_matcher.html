@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+
+{% block title %}Pocket AI - Product Matcher{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-purple-50 to-indigo-50 shadow-lg rounded-lg p-8 mb-8">
+    <div class="text-center mb-10">
+        <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 mb-4">Product Matcher</h1>
+        <p class="text-gray-600 max-w-2xl mx-auto">Upload a product image and our AI will analyze it to recommend the best matching product from our catalog, with a detailed explanation of why it matches.</p>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <!-- Upload Section -->
+        <div id="upload-section" class="bg-white rounded-xl shadow-md p-6 border border-purple-100 transform transition-all duration-300 hover:shadow-lg">
+            <h2 class="text-2xl font-semibold text-purple-700 mb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Upload Image
+            </h2>
+            
+            <form id="upload-form" class="space-y-4" enctype="multipart/form-data">
+                <input type="hidden" name="session_id" value="{{ session_id }}">
+                
+                <div class="relative border-2 border-dashed border-purple-300 rounded-lg p-6 text-center cursor-pointer hover:bg-purple-50 transition-colors" id="drop-area">
+                    <input class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                           id="image" name="image" type="file" accept="image/*" required>
+                    
+                    <div class="space-y-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <div class="text-purple-600 font-medium">Click to upload or drag and drop</div>
+                        <p class="text-sm text-gray-500">Supported formats: JPEG, PNG, GIF, WebP (Max 5MB)</p>
+                    </div>
+                    
+                    <div id="preview-container" class="mt-4 hidden">
+                        <div class="relative w-48 h-48 mx-auto">
+                            <img id="image-preview" class="w-full h-full object-contain rounded-md" src="" alt="Preview">
+                            <button type="button" id="remove-image" class="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 transform translate-x-1/2 -translate-y-1/2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p id="file-name" class="mt-2 text-sm text-gray-500 truncate"></p>
+                    </div>
+                </div>
+                
+                <button class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium py-3 px-4 rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 flex items-center justify-center" 
+                        type="submit" id="submit-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Analyze Image
+                </button>
+            </form>
+        </div>
+        
+        <!-- Info Section -->
+        <div class="bg-white rounded-xl shadow-md p-6 border border-purple-100">
+            <h2 class="text-2xl font-semibold text-purple-700 mb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                How It Works
+            </h2>
+            
+            <div class="space-y-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 bg-purple-100 rounded-full p-2 mt-1">
+                        <span class="flex items-center justify-center h-5 w-5 rounded-full bg-purple-600 text-white text-xs font-bold">1</span>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-800">Upload an Image</h3>
+                        <p class="text-gray-600">Select or drag a product image you want to match. The clearer the image, the better the results.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 bg-purple-100 rounded-full p-2 mt-1">
+                        <span class="flex items-center justify-center h-5 w-5 rounded-full bg-purple-600 text-white text-xs font-bold">2</span>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-800">AI Analysis</h3>
+                        <p class="text-gray-600">Our advanced AI will analyze the image to identify key features, colors, and product type.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 bg-purple-100 rounded-full p-2 mt-1">
+                        <span class="flex items-center justify-center h-5 w-5 rounded-full bg-purple-600 text-white text-xs font-bold">3</span>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-800">Get Best Match</h3>
+                        <p class="text-gray-600">Receive the best matching product with a detailed explanation of why it matches your image.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading State -->
+    <div id="loading" class="hidden mt-8">
+        <div class="bg-white rounded-xl shadow-md p-8 text-center">
+            <div class="flex flex-col items-center">
+                <div class="relative">
+                    <div class="w-20 h-20 border-purple-200 border-4 rounded-full"></div>
+                    <div class="w-20 h-20 border-purple-600 border-t-4 animate-spin rounded-full absolute left-0 top-0"></div>
+                </div>
+                <div class="mt-4">
+                    <h3 class="text-xl font-semibold text-gray-800">Analyzing Your Image</h3>
+                    <p class="text-gray-600 mt-2">Our AI is examining the image and finding matching products...</p>
+                    <div class="mt-4 bg-purple-50 rounded-lg p-3">
+                        <div class="flex items-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p class="text-sm text-gray-600">This may take up to 30 seconds depending on the image.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results Section -->
+    <div id="results" class="hidden mt-8 space-y-8">
+        <!-- Image Analysis -->
+        <div class="bg-white rounded-xl shadow-md p-6 border border-purple-100">
+            <h2 class="text-2xl font-semibold text-purple-700 mb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Image Analysis
+            </h2>
+            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-lg shadow-inner">
+                <div class="flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-600 mr-2 mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p id="image-description" class="text-gray-800 whitespace-pre-line"></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Product Recommendations -->
+        <div class="bg-white rounded-xl shadow-md p-6 border border-purple-100">
+            <h2 class="text-2xl font-semibold text-purple-700 mb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                Best Matching Product
+            </h2>
+            <div id="recommendations" class="space-y-6"></div>
+        </div>
+        
+        <!-- Try Another Button -->
+        <div class="text-center">
+            <button id="try-another-btn" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium py-3 px-6 rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 inline-flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Try Another Image
+            </button>
+        </div>
+    </div>
+    
+    <!-- Error State -->
+    <div id="error" class="hidden mt-8">
+        <div class="bg-white rounded-xl shadow-md p-6 border border-red-100">
+            <div class="flex items-center justify-center mb-4 text-red-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-center text-gray-800 mb-2">Oops! Something Went Wrong</h3>
+            <p id="error-message" class="text-center text-red-600 mb-6"></p>
+            
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-700">
+                            If you're seeing an error, it might be because:
+                        </p>
+                        <ul class="list-disc list-inside text-sm text-yellow-700 mt-2">
+                            <li>The image is too large (max 5MB)</li>
+                            <li>The image format is not supported</li>
+                            <li>The Ollama llava model is not properly installed</li>
+                            <li>The server is temporarily busy</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <button id="retry-btn" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium py-3 px-6 rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 inline-flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('upload-form');
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+    const error = document.getElementById('error');
+    const errorMessage = document.getElementById('error-message');
+    const imageDescription = document.getElementById('image-description');
+    const recommendations = document.getElementById('recommendations');
+    const retryBtn = document.getElementById('retry-btn');
+    const tryAnotherBtn = document.getElementById('try-another-btn');
+    const submitBtn = document.getElementById('submit-btn');
+    const imageInput = document.getElementById('image');
+    const imagePreview = document.getElementById('image-preview');
+    const previewContainer = document.getElementById('preview-container');
+    const fileName = document.getElementById('file-name');
+    const removeImageBtn = document.getElementById('remove-image');
+    const uploadSection = document.getElementById('upload-section');
+    const dropArea = document.getElementById('drop-area');
+    
+    // Handle file selection for preview
+    imageInput.addEventListener('change', function() {
+        handleFileSelect(this.files[0]);
+    });
+    
+    // Handle drag and drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+        dropArea.classList.add('bg-purple-50', 'border-purple-500');
+    }
+    
+    function unhighlight() {
+        dropArea.classList.remove('bg-purple-50', 'border-purple-500');
+    }
+    
+    dropArea.addEventListener('drop', function(e) {
+        const dt = e.dataTransfer;
+        const file = dt.files[0];
+        handleFileSelect(file);
+    });
+    
+    function handleFileSelect(file) {
+        if (!file) return;
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            showError('The selected file is not an image. Please select a valid image file.');
+            return;
+        }
+        
+        // Validate file size
+        if (file.size > 5 * 1024 * 1024) {
+            showError('The selected file is too large. Maximum file size is 5MB.');
+            return;
+        }
+        
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            imagePreview.src = e.target.result;
+            previewContainer.classList.remove('hidden');
+            fileName.textContent = file.name;
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    // Remove image preview
+    removeImageBtn.addEventListener('click', function() {
+        imageInput.value = '';
+        previewContainer.classList.add('hidden');
+        imagePreview.src = '';
+        fileName.textContent = '';
+    });
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitForm();
+    });
+    
+    // Retry button
+    retryBtn.addEventListener('click', function() {
+        error.classList.add('hidden');
+        uploadSection.classList.remove('hidden');
+    });
+    
+    // Try another image button
+    tryAnotherBtn.addEventListener('click', function() {
+        results.classList.add('hidden');
+        uploadSection.classList.remove('hidden');
+        imageInput.value = '';
+        previewContainer.classList.add('hidden');
+        imagePreview.src = '';
+        fileName.textContent = '';
+    });
+    
+    function submitForm() {
+        // Validate file
+        const file = imageInput.files[0];
+        if (!file) {
+            showError('Please select an image file.');
+            return;
+        }
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            showError('The selected file is not an image. Please select a valid image file.');
+            return;
+        }
+        
+        // Validate file size
+        if (file.size > 5 * 1024 * 1024) {
+            showError('The selected file is too large. Maximum file size is 5MB.');
+            return;
+        }
+        
+        // Show loading spinner
+        loading.classList.remove('hidden');
+        uploadSection.classList.add('hidden');
+        results.classList.add('hidden');
+        error.classList.add('hidden');
+        submitBtn.disabled = true;
+        
+        // Get form data
+        const formData = new FormData(form);
+        
+        // Send request
+        fetch('/match-product', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            loading.classList.add('hidden');
+            submitBtn.disabled = false;
+            
+            if (data.success) {
+                // Show results
+                results.classList.remove('hidden');
+                
+                // Display image description
+                imageDescription.textContent = data.data.imageDescription;
+                
+                // Display recommendations
+                recommendations.innerHTML = '';
+                
+                // Parse the markdown content for recommendations
+                const recommendationHtml = markdownToHtml(data.data.matchExplanation);
+                recommendations.innerHTML = recommendationHtml;
+                
+                // Add product cards
+                if (data.data.products && data.data.products.length > 0) {
+                    const productCardsHtml = createProductCards(data.data.products);
+                    recommendations.innerHTML += productCardsHtml;
+                }
+                
+                // Scroll to results
+                results.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                // Show error
+                showError(data.error || 'An error occurred while processing the image.');
+            }
+        })
+        .catch(err => {
+            loading.classList.add('hidden');
+            submitBtn.disabled = false;
+            showError('Failed to connect to the server. Please try again.');
+            console.error('Error:', err);
+        });
+    }
+    
+    function showError(message) {
+        error.classList.remove('hidden');
+        uploadSection.classList.add('hidden');
+        errorMessage.textContent = message;
+    }
+    
+    // Enhanced markdown to HTML converter
+    function markdownToHtml(markdown) {
+        if (!markdown) return '';
+        
+        // Process the content as a single product section
+        let processedSection = markdown;
+        
+        // Remove standalone # characters (often used as separators) - More comprehensive cleanup
+        processedSection = processedSection.replace(/^#\s*$/gm, '');
+        processedSection = processedSection.replace(/\n#\s*$/gm, '');
+        processedSection = processedSection.replace(/\n#\s*\n/gm, '\n\n');
+        processedSection = processedSection.replace(/^#\s*/gm, '');
+        processedSection = processedSection.replace(/\n#\s*/gm, '\n');
+        processedSection = processedSection.replace(/\s+#\s+/g, ' ');
+        processedSection = processedSection.replace(/#$/gm, '');
+        processedSection = processedSection.replace(/\s+#$/gm, '');
+        processedSection = processedSection.replace(/\s+#\n/g, '\n');
+        processedSection = processedSection.replace(/([^\n])#([^\n])/g, '$1 $2'); // Replace # between words with space
+        
+        // Extract the product name and price from the first line if it matches the pattern
+        let productName = '';
+        let productPrice = '';
+        let productId = '';
+        
+        // Extract product name, price and ID
+        const titleMatch = processedSection.match(/^## Best Match: (.*?) \(\$([\d.]+)\)/);
+        if (titleMatch) {
+            productName = titleMatch[1];
+            productPrice = titleMatch[2];
+            
+            // Remove the title line as we'll create a custom one
+            processedSection = processedSection.replace(/^## Best Match:.*?\n/, '');
+            
+            // Try to extract product ID
+            const idMatch = processedSection.match(/Product ID: (\d+)/);
+            if (idMatch) {
+                productId = idMatch[1];
+                // Remove the Product ID line as we'll include it in our custom header
+                processedSection = processedSection.replace(/Product ID:.*?\n/, '');
+            }
+        }
+        
+        // Convert headers with proper levels
+        // ## Header -> h3 tag
+        processedSection = processedSection.replace(/## (.*?)$/gm, '<h3 class="text-xl font-semibold text-purple-700 mt-6 mb-2">$1</h3>');
+        
+        // Convert ### Header -> h4 tag with styling
+        processedSection = processedSection.replace(/### (.*?)$/gm, '<h4 class="text-lg font-semibold text-indigo-600 mt-5 mb-2 flex items-center"><span class="w-1 h-5 bg-indigo-500 rounded mr-2"></span>$1</h4>');
+        
+        // Convert bold
+        processedSection = processedSection.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>');
+        
+        // Convert lists
+        processedSection = processedSection.replace(/- (.*?)$/gm, '<li class="flex items-start mb-2"><span class="inline-block w-4 h-4 rounded-full bg-purple-100 text-purple-600 mr-2 flex-shrink-0 flex items-center justify-center text-xs">•</span><span>$1</span></li>');
+        processedSection = processedSection.replace(/• (.*?)$/gm, '<li class="flex items-start mb-2"><span class="inline-block w-4 h-4 rounded-full bg-purple-100 text-purple-600 mr-2 flex-shrink-0 flex items-center justify-center text-xs">•</span><span>$1</span></li>');
+        
+        // Wrap lists in ul
+        processedSection = processedSection.replace(/<li class="flex items-start mb-2">.*?<\/li>/gs, match => {
+            return '<ul class="my-4 space-y-1">' + match + '</ul>';
+        });
+        
+        // Convert paragraphs
+        processedSection = processedSection.replace(/\n\n/g, '</p><p class="mb-4 text-gray-700">');
+        
+        // Wrap in paragraph tags
+        processedSection = '<p class="mb-4 text-gray-700">' + processedSection + '</p>';
+        
+        // Fix any double paragraph tags
+        processedSection = processedSection.replace(/<\/p><p class="mb-4 text-gray-700"><\/p><p class="mb-4 text-gray-700">/g, '</p><p class="mb-4 text-gray-700">');
+        
+        // Create a beautiful product card with the extracted information
+        let productCard = '';
+        if (productName && productPrice) {
+            // Generate a random pastel background color for the product card
+            const hue = Math.floor(Math.random() * 360);
+            const bgGradient = `linear-gradient(135deg, hsla(${hue}, 100%, 97%, 1) 0%, hsla(${hue+30}, 100%, 94%, 1) 100%)`;
+            const accentColor = `hsla(${hue}, 70%, 45%, 1)`;
+            
+            productCard = `
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-6 border border-gray-200">
+                <div class="p-6" style="background: ${bgGradient}">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center">
+                                <span class="inline-flex items-center justify-center p-2 bg-white bg-opacity-80 rounded-full mr-3 shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="${accentColor}">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </span>
+                                <h2 class="text-2xl font-bold text-gray-800">${productName}</h2>
+                            </div>
+                            ${productId ? `<p class="text-sm text-gray-500 mt-1">Product ID: ${productId}</p>` : ''}
+                        </div>
+                        <div class="bg-white py-1 px-3 rounded-full shadow-sm">
+                            <span class="text-xl font-bold" style="color: ${accentColor}">$${productPrice}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    ${processedSection}
+                </div>
+            </div>`;
+            
+            return productCard;
+        }
+        
+        // Fallback to the simple styled div if we couldn't extract product info
+        return `<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-6">${processedSection}</div>`;
+    }
+    
+    // Create enhanced product cards
+    function createProductCards(products) {
+        if (!products || products.length === 0) return '';
+        
+        let html = '<div class="mt-10 mb-4"><h3 class="text-xl font-semibold text-purple-700">Product Summary</h3></div>';
+        html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-6">';
+        
+        products.forEach(product => {
+            // Generate a random pastel background color for the product card
+            const hue = Math.floor(Math.random() * 360);
+            const bgColor = `hsla(${hue}, 100%, 97%, 1)`;
+            const borderColor = `hsla(${hue}, 60%, 85%, 1)`;
+            const accentColor = `hsla(${hue}, 70%, 45%, 1)`;
+            
+            html += `
+            <div class="rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow border" style="border-color: ${borderColor}; background-color: ${bgColor}">
+                <div class="p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="px-3 py-1 bg-white rounded-full text-xs font-medium shadow-sm" style="color: ${accentColor}">${product.category}</span>
+                        <div class="flex items-center">
+                            <span class="font-bold text-gray-800">$${product.price.toFixed(2)}</span>
+                            <span class="ml-2 text-xs font-medium px-2 py-1 bg-white rounded-full shadow-sm" style="color: ${accentColor}">ID: ${product.id}</span>
+                        </div>
+                    </div>
+                    
+                    <h4 class="font-bold text-lg text-gray-800 mb-2">${product.name}</h4>
+                    <p class="text-gray-600 text-sm mb-3">${product.type}</p>
+                    
+                    <div class="border-t border-gray-200 mt-3 pt-3">
+                        <div class="flex flex-wrap gap-1 mb-3">
+                            ${product.tags.map(tag => `
+                                <span class="px-2 py-1 bg-white bg-opacity-60 rounded-full text-xs text-gray-600 shadow-sm">${tag}</span>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2 mt-3">
+                            <div class="flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
+                                <span class="text-xs text-gray-500">Colors: ${product.colors ? product.colors.join(', ') : 'Various'}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <span class="text-xs text-gray-500">${product.features ? product.features[0] : product.type}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        });
+        
+        html += '</div>';
+        return html;
+    }
+});
+</script>
+{% endblock %} 

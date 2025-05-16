@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block title %}Pocket AI - Product Recommendations{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-purple-50 to-indigo-50 shadow-lg rounded-lg p-8 mb-8">
+    <div class="text-center mb-10">
+        <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 mb-4">Smart Product Recommendations</h1>
+        <p class="text-gray-600 max-w-2xl mx-auto">Describe what you're looking for, and our AI will recommend the perfect products tailored to your needs!</p>
+    </div>
+    
+    <div id="session-id" data-session-id="{{ session_id }}" class="hidden"></div>
+    
+    <form id="recommendation-form" class="mb-8 max-w-2xl mx-auto">
+        <div class="relative">
+            <input type="text" id="query-input" class="w-full border border-purple-300 rounded-full px-6 py-4 pr-32 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm text-gray-700" placeholder="e.g., a waterproof jacket for hiking in rainy weather" required>
+            <button type="submit" class="absolute right-2 top-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2 rounded-full hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 shadow-md">
+                <span class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Find
+                </span>
+            </button>
+        </div>
+    </form>
+    
+    <div id="loading" class="hidden">
+        <div class="flex flex-col items-center justify-center py-12">
+            <div class="relative">
+                <div class="w-20 h-20 border-purple-200 border-4 rounded-full"></div>
+                <div class="w-20 h-20 border-purple-600 border-t-4 animate-spin rounded-full absolute left-0 top-0"></div>
+            </div>
+            <p class="text-center text-gray-600 mt-4 font-medium">Finding the perfect products for you...</p>
+            <p class="text-center text-gray-500 text-sm mt-2">Our AI is analyzing your request and searching our catalog</p>
+        </div>
+    </div>
+    
+    <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"></div>
+    
+    <div id="results-container" class="hidden mt-8">
+        <div class="bg-white rounded-xl shadow-md p-6 border border-purple-100 mb-8">
+            <div class="flex items-start">
+                <div class="bg-purple-100 rounded-full p-3 mr-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">Your Personalized Recommendations</h2>
+                    <p class="text-gray-600">Based on your search for: <span id="search-query" class="font-semibold text-purple-700"></span></p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="recommendations-container" class="space-y-8"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const recommendationForm = document.getElementById('recommendation-form');
+        const queryInput = document.getElementById('query-input');
+        const loadingElement = document.getElementById('loading');
+        const errorMessage = document.getElementById('error-message');
+        const resultsContainer = document.getElementById('results-container');
+        const searchQueryElement = document.getElementById('search-query');
+        const recommendationsContainer = document.getElementById('recommendations-container');
+        const sessionIdElement = document.getElementById('session-id');
+        let sessionId = sessionIdElement.dataset.sessionId || '';
+        
+        recommendationForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const query = queryInput.value.trim();
+            if (!query) return;
+            
+            // Reset previous results
+            errorMessage.classList.add('hidden');
+            resultsContainer.classList.add('hidden');
+            
+            // Show loading indicator
+            loadingElement.classList.remove('hidden');
+            
+            try {
+                // Send query to backend
+                const formData = new FormData();
+                formData.append('session_id', sessionId);
+                formData.append('query', query);
+                
+                const response = await fetch('/get-recommendations', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                // Hide loading indicator
+                loadingElement.classList.add('hidden');
+                
+                if (result.success) {
+                    // Update session ID if needed
+                    if (!sessionId && result.data.sessionId) {
+                        sessionId = result.data.sessionId;
+                        // Update URL with session ID
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('session_id', sessionId);
+                        window.history.replaceState({}, '', newUrl);
+                    }
+                    
+                    // Update search query display
+                    searchQueryElement.textContent = query;
+                    
+                    // Process recommendation text
+                    const recommendationText = result.data.recommendationText;
+                    
+                    // Parse the markdown content to extract product sections
+                    const productSections = parseProductSections(recommendationText);
+                    
+                    // Display products
+                    recommendationsContainer.innerHTML = '';
+                    
+                    if (productSections.length > 0) {
+                        // Create product cards from the parsed sections
+                        productSections.forEach((section, index) => {
+                            const productId = extractProductId(section.content);
+                            let matchingProduct = null;
+                            
+                            // Find matching product from the API response
+                            if (result.data.products && result.data.products.length > 0) {
+                                matchingProduct = result.data.products.find(p => p.id === parseInt(productId));
+                            }
+                            
+                            // Create a product card with the section content and product data
+                            const productCard = createProductCard(section, matchingProduct, index);
+                            recommendationsContainer.appendChild(productCard);
+                        });
+                    } else if (result.data.products && result.data.products.length > 0) {
+                        // Fallback to using just the products from the API if parsing failed
+                        result.data.products.forEach((product, index) => {
+                            const productCard = createSimpleProductCard(product, index);
+                            recommendationsContainer.appendChild(productCard);
+                        });
+                    } else if (result.data.error) {
+                        // Show error in the recommendations container
+                        recommendationsContainer.innerHTML = `
+                            <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-6 py-4 rounded-lg">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm text-yellow-700">${result.data.error}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // No products found
+                        recommendationsContainer.innerHTML = `
+                            <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-6 py-4 rounded-lg">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm text-yellow-700">No products found matching your query. Please try a different search.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Show results
+                    resultsContainer.classList.remove('hidden');
+                    
+                    // Scroll to results
+                    resultsContainer.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    // Show error message
+                    errorMessage.textContent = result.error || 'Failed to get recommendations';
+                    errorMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                // Hide loading indicator
+                loadingElement.classList.add('hidden');
+                
+                // Show error message
+                errorMessage.textContent = error.message || 'Something went wrong';
+                errorMessage.classList.remove('hidden');
+            }
+        });
+        
+        // Function to parse product sections from markdown text
+        function parseProductSections(markdown) {
+            const sections = [];
+            const productRegex = /##\s+([^(]+)\s+\(\$([^)]+)\)([\s\S]*?)(?=##\s+|$)/g;
+            
+            // First, clean up any standalone # characters
+            let cleanedMarkdown = markdown;
+            cleanedMarkdown = cleanedMarkdown.replace(/^#\s*$/gm, '');
+            cleanedMarkdown = cleanedMarkdown.replace(/\n#\s*$/gm, '');
+            cleanedMarkdown = cleanedMarkdown.replace(/\n#\s*\n/gm, '\n\n');
+            cleanedMarkdown = cleanedMarkdown.replace(/^#\s*/gm, '');
+            cleanedMarkdown = cleanedMarkdown.replace(/\n#\s*/gm, '\n');
+            cleanedMarkdown = cleanedMarkdown.replace(/\s+#\s+/g, ' ');
+            cleanedMarkdown = cleanedMarkdown.replace(/#$/gm, '');
+            cleanedMarkdown = cleanedMarkdown.replace(/\s+#$/gm, '');
+            cleanedMarkdown = cleanedMarkdown.replace(/\s+#\n/g, '\n');
+            cleanedMarkdown = cleanedMarkdown.replace(/([^\n])#([^\n])/g, '$1 $2');
+            cleanedMarkdown = cleanedMarkdown.replace(/#/g, '');
+            
+            let match;
+            while ((match = productRegex.exec(cleanedMarkdown)) !== null) {
+                const productName = match[1].trim();
+                const productPrice = match[2].trim();
+                const content = match[0];
+                
+                sections.push({
+                    productName,
+                    productPrice,
+                    content
+                });
+            }
+            
+            return sections;
+        }
+        
+        // Function to extract product ID from section content
+        function extractProductId(content) {
+            const idMatch = content.match(/Product ID:\s*(\d+)/i);
+            return idMatch ? idMatch[1] : '';
+        }
+        
+        // Function to create a beautiful product card from section content
+        function createProductCard(section, productData, index) {
+            // Generate a random pastel background color for the product card
+            const hue = (index * 137) % 360; // Use golden angle to get visually distinct colors
+            const bgGradient = `linear-gradient(135deg, hsla(${hue}, 100%, 97%, 1) 0%, hsla(${hue+30}, 100%, 94%, 1) 100%)`;
+            const accentColor = `hsla(${hue}, 70%, 45%, 1)`;
+            
+            // Parse the markdown content
+            let content = section.content;
+            
+            // Additional cleanup for standalone # characters
+            content = content.replace(/^#\s*$/gm, '');
+            content = content.replace(/\n#\s*$/gm, '');
+            content = content.replace(/\n#\s*\n/gm, '\n\n');
+            content = content.replace(/^#\s*/gm, '');
+            content = content.replace(/\n#\s*/gm, '\n');
+            content = content.replace(/\s+#\s+/g, ' ');
+            content = content.replace(/#$/gm, '');
+            content = content.replace(/\s+#$/gm, '');
+            content = content.replace(/\s+#\n/g, '\n');
+            content = content.replace(/([^\n])#([^\n])/g, '$1 $2');
+            content = content.replace(/#/g, '');
+            
+            // Extract relevance score if present
+            let relevanceScore = null;
+            const scoreMatch = content.match(/Relevance Score:\s*(\d+)\/100/i);
+            if (scoreMatch) {
+                relevanceScore = parseInt(scoreMatch[1]);
+            }
+            
+            // Convert markdown headers
+            content = content.replace(/## ([^\n]+)/g, '<h2 class="text-2xl font-bold text-gray-800 mb-4">$1</h2>');
+            content = content.replace(/### ([^\n]+)/g, '<h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2 flex items-center"><span class="w-1 h-5 mr-2" style="background-color: ' + accentColor + '"></span>$1</h3>');
+            
+            // Convert bullet points
+            content = content.replace(/- ([^\n]+)/g, '<li class="flex items-start mb-2"><span class="inline-block w-4 h-4 rounded-full mr-2 flex-shrink-0 flex items-center justify-center text-xs" style="background-color: ' + accentColor + '33; color: ' + accentColor + '">•</span><span>$1</span></li>');
+            
+            // Wrap lists in ul
+            content = content.replace(/<li class="flex items-start mb-2">.*?<\/li>/gs, match => {
+                return '<ul class="my-3 space-y-1">' + match + '</ul>';
+            });
+            
+            // Convert paragraphs
+            const paragraphs = content.split('\n\n');
+            content = paragraphs.map(p => {
+                if (!p.trim() || p.includes('<h2') || p.includes('<h3') || p.includes('<ul')) {
+                    return p;
+                }
+                return '<p class="mb-3 text-gray-600">' + p + '</p>';
+            }).join('\n');
+            
+            // Remove Product ID line (we'll display it separately)
+            content = content.replace(/Product ID:.*$/m, '');
+            
+            // Create the card element
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-xl shadow-lg overflow-hidden mb-8 border border-gray-200 transform transition-all duration-300 hover:shadow-xl';
+            
+            // Product tags from product data
+            let tagsHtml = '';
+            if (productData && productData.tags) {
+                tagsHtml = `
+                    <div class="flex flex-wrap gap-1 mt-3">
+                        ${productData.tags.map(tag => `
+                            <span class="px-2 py-1 text-xs rounded-full" style="background-color: ${accentColor}22; color: ${accentColor}">${tag}</span>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            // Product ID badge
+            const productId = extractProductId(section.content);
+            const idBadge = productId ? `
+                <div class="absolute top-4 right-4 bg-white py-1 px-3 rounded-full shadow-sm">
+                    <span class="text-xs font-medium" style="color: ${accentColor}">ID: ${productId}</span>
+                </div>
+            ` : '';
+            
+            // Relevance score badge
+            const relevanceBadge = relevanceScore ? `
+                <div class="absolute top-16 right-4 bg-white py-1 px-3 rounded-full shadow-sm">
+                    <span class="text-xs font-medium" style="color: ${getScoreColor(relevanceScore)}">
+                        Relevance: ${relevanceScore}/100
+                    </span>
+                </div>
+            ` : '';
+            
+            card.innerHTML = `
+                <div class="relative p-6" style="background: ${bgGradient}">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center">
+                            <div class="bg-white rounded-full p-2 mr-3 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="${accentColor}">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">${section.productName}</h2>
+                                <p class="text-lg font-bold" style="color: ${accentColor}">$${section.productPrice}</p>
+                            </div>
+                        </div>
+                    </div>
+                    ${idBadge}
+                    ${relevanceBadge}
+                    ${tagsHtml}
+                </div>
+                
+                <div class="p-6">
+                    ${content}
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Function to get color based on score
+        function getScoreColor(score) {
+            if (score >= 90) return '#22c55e'; // Green for excellent matches
+            if (score >= 80) return '#16a34a'; // Darker green for very good matches
+            if (score >= 70) return '#ca8a04'; // Yellow/amber for good matches
+            return '#dc2626'; // Red for poor matches (though these should be filtered out)
+        }
+        
+        // Fallback function to create a simple product card
+        function createSimpleProductCard(product, index) {
+            // Generate a random pastel background color for the product card
+            const hue = (index * 137) % 360; // Use golden angle to get visually distinct colors
+            const bgGradient = `linear-gradient(135deg, hsla(${hue}, 100%, 97%, 1) 0%, hsla(${hue+30}, 100%, 94%, 1) 100%)`;
+            const accentColor = `hsla(${hue}, 70%, 45%, 1)`;
+            
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-xl shadow-lg overflow-hidden mb-8 border border-gray-200';
+            
+            card.innerHTML = `
+                <div class="relative p-6" style="background: ${bgGradient}">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center">
+                            <div class="bg-white rounded-full p-2 mr-3 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="${accentColor}">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">${product.name}</h2>
+                                <p class="text-lg font-bold" style="color: ${accentColor}">$${product.price.toFixed(2)}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute top-4 right-4 bg-white py-1 px-3 rounded-full shadow-sm">
+                        <span class="text-xs font-medium" style="color: ${accentColor}">ID: ${product.id}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1 mt-3">
+                        ${product.tags.map(tag => `
+                            <span class="px-2 py-1 text-xs rounded-full" style="background-color: ${accentColor}22; color: ${accentColor}">${tag}</span>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2 flex items-center">
+                        <span class="w-1 h-5 mr-2" style="background-color: ${accentColor}"></span>
+                        Product Details
+                    </h3>
+                    <p class="mb-3 text-gray-600">
+                        ${product.name} - ${product.category} ${product.type}
+                    </p>
+                    
+                    <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2 flex items-center">
+                        <span class="w-1 h-5 mr-2" style="background-color: ${accentColor}"></span>
+                        Features
+                    </h3>
+                    <ul class="my-3 space-y-1">
+                        ${product.tags.map(tag => `
+                            <li class="flex items-start mb-2">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2 flex-shrink-0 flex items-center justify-center text-xs" style="background-color: ${accentColor}33; color: ${accentColor}">•</span>
+                                <span>${tag}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `;
+            
+            return card;
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Pocket AI - Your Shopping Assistant{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col font-sans">
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="/" class="flex items-center space-x-2">
+                <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full w-10 h-10 flex items-center justify-center">
+                    <span class="text-white font-bold text-xl">P</span>
+                </div>
+                <div>
+                    <span class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">Pocket AI</span>
+                    <span class="text-xs text-gray-500 block -mt-1">Shopping Assistant</span>
+                </div>
+            </a>
+            <nav>
+                <ul class="flex space-x-8">
+                    <li><a href="/" class="text-gray-600 hover:text-purple-600 font-medium transition-colors">Home</a></li>
+                    <li><a href="/products" class="text-gray-600 hover:text-purple-600 font-medium transition-colors">Products</a></li>
+                    <li><a href="/chat" class="text-gray-600 hover:text-purple-600 font-medium transition-colors">Chat</a></li>
+                    <li><a href="/recommend" class="text-gray-600 hover:text-purple-600 font-medium transition-colors">Recommend</a></li>
+                    <li><a href="/product-matcher" class="text-gray-600 hover:text-purple-600 font-medium transition-colors">Product Matcher</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-white border-t border-gray-200 py-8 mt-auto">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0 text-center md:text-left">
+                    <div class="flex items-center justify-center md:justify-start space-x-2 mb-2">
+                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full w-8 h-8 flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">P</span>
+                        </div>
+                        <span class="text-lg font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">Pocket AI</span>
+                    </div>
+                    <p class="text-sm text-gray-500">Your AI-powered shopping assistant</p>
+                </div>
+                <div class="flex flex-col items-center md:items-end">
+                    <p class="text-sm text-gray-500 mb-1">Powered by Ollama</p>
+                    <div class="flex space-x-2">
+                        <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">llama3.2</span>
+                        <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">llava</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html> 
